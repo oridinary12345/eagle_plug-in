@@ -1,0 +1,25 @@
+{
+    "id": "SPRITE_FRAME_VIEWER_001",
+    "version": "1.0.1",
+    "platform": "all",
+    "arch": "all",
+    "name": "PriteSheet",
+    "logo": "/logo.png",
+    "keywords": ["精灵图", "序列帧", "动画", "sprite", "帧动画"],
+    "devTools": false,
+    "main": {
+        "url": "index.html",
+        "width": 900,
+        "height": 700,
+        "minWidth": 700,
+        "minHeight": 500,
+        "maxWidth": 1400,
+        "maxHeight": 1000,
+        "resizable": true,
+        "backgroundColor": "#2a2a2a",
+        "frame": true,
+        "fullscreenable": true,
+        "maximizable": true,
+        "minimizable": true
+    }
+}

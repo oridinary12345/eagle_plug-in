@@ -1,0 +1,72 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "created": "2025-07-11T09:09:00.072Z",
+    "description": "Eagle 精灵图查看器配置文件",
+    "lastModified": "2025-07-11T09:19:39.759Z"
+  },
+  "water_splash_1_new_sheet_512x512_41033": {
+    "spriteConfig": {
+      "cols": 3,
+      "rows": 3,
+      "startFrame": 0,
+      "endFrame": 9,
+      "direction": "horizontal"
+    },
+    "timestamp": 1752225492106,
+    "version": "1.0",
+    "imageName": "water_splash_1_new_sheet",
+    "imageSize": {
+      "width": 512,
+      "height": 512
+    }
+  },
+  "water_circle_ripple_sheet_1_512x512_28288": {
+    "spriteConfig": {
+      "cols": 4,
+      "rows": 4,
+      "startFrame": 0,
+      "endFrame": 15,
+      "direction": "horizontal"
+    },
+    "timestamp": 1752225516407,
+    "version": "1.0",
+    "imageName": "water_circle_ripple_sheet 1",
+    "imageSize": {
+      "width": 512,
+      "height": 512
+    }
+  },
+  "water_splash_1_new_sheet_bw_512x512_42645": {
+    "spriteConfig": {
+      "cols": 3,
+      "rows": 3,
+      "startFrame": 0,
+      "endFrame": 8,
+      "direction": "horizontal"
+    },
+    "timestamp": 1752225534255,
+    "version": "1.0",
+    "imageName": "water_splash_1_new_sheet_bw",
+    "imageSize": {
+      "width": 512,
+      "height": 512
+    }
+  },
+  "water_splash_1_sheet_512x512_36927": {
+    "spriteConfig": {
+      "cols": 3,
+      "rows": 3,
+      "startFrame": 0,
+      "endFrame": 8,
+      "direction": "horizontal"
+    },
+    "timestamp": 1752225579759,
+    "version": "1.0",
+    "imageName": "water_splash_1_sheet",
+    "imageSize": {
+      "width": 512,
+      "height": 512
+    }
+  }
+}
