@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>项目管理时间报告生成</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .status-area {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .status-title {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #statusMessage {
+            color: #333;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .empty-state {
+            color: #999;
+            text-align: center;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+
+        .status-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .timestamp {
+            color: #999;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+
+        .info {
+            color: #17a2b8;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .form-group select:hover {
+            border-color: #667eea;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+    </style>
+    <script type="text/javascript" src="js/plugin.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📊 项目管理时间报告生成器</h1>
+        <p class="subtitle">快速生成项目时间报告和统计信息</p>
+        
+        <div class="form-group">
+            <label for="personSelect">选择人员：</label>
+            <select id="personSelect">
+                <option value="all">全部人员</option>
+                <option value="梁嘉雄">梁嘉雄</option>
+                <option value="汤命沛">汤命沛</option>
+                <option value="刘康康">刘康康</option>
+                <option value="王丽">王丽</option>
+                <option value="唐龙">唐龙</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>时间范围筛选：</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="flex: 1;">
+                    <label for="startYear" style="font-size: 12px; font-weight: normal; color: #666;">开始年份</label>
+                    <select id="startYear" style="margin-bottom: 5px;">
+                        <!-- 动态生成年份选项 -->
+                    </select>
+                    <label for="startMonth" style="font-size: 12px; font-weight: normal; color: #666;">开始月份</label>
+                    <select id="startMonth">
+                        <option value="01">1月</option>
+                        <option value="02">2月</option>
+                        <option value="03">3月</option>
+                        <option value="04">4月</option>
+                        <option value="05">5月</option>
+                        <option value="06">6月</option>
+                        <option value="07">7月</option>
+                        <option value="08">8月</option>
+                        <option value="09">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                    </select>
+                </div>
+                <span style="padding-top: 20px;">至</span>
+                <div style="flex: 1;">
+                    <label for="endYear" style="font-size: 12px; font-weight: normal; color: #666;">结束年份</label>
+                    <select id="endYear" style="margin-bottom: 5px;">
+                        <!-- 动态生成年份选项 -->
+                    </select>
+                    <label for="endMonth" style="font-size: 12px; font-weight: normal; color: #666;">结束月份</label>
+                    <select id="endMonth">
+                        <option value="01">1月</option>
+                        <option value="02">2月</option>
+                        <option value="03">3月</option>
+                        <option value="04">4月</option>
+                        <option value="05">5月</option>
+                        <option value="06">6月</option>
+                        <option value="07">7月</option>
+                        <option value="08">8月</option>
+                        <option value="09">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 8px;">
+                <label style="font-size: 12px; font-weight: normal;">
+                    <input type="checkbox" id="enableDateFilter" style="margin-right: 5px;">
+                    启用时间范围筛选
+                </label>
+            </div>
+        </div>
+        
+        <div class="button-container">
+            <button id="generateBtn">生成报告</button>
+        </div>
+        
+        <div class="status-area">
+            <div class="status-title">状态信息</div>
+            <div id="statusMessage" class="empty-state">点击上方按钮生成报告...</div>
+        </div>
+    </div>
+</body>
+</html>
