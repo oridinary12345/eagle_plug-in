@@ -4,29 +4,12 @@
     "platform": "all",
     "arch": "all",
     "name": "项目管理时间报告生成",
-    "label": "生成项目报告",
-    "logo": "/logo.png",
-    "keywords": ["项目管理", "时间报告", "报告生成"],
+    "logo": "logo.png",
+    "keywords": ["项目管理", "时间报告"],
     "devTools": false,
-    "menu": [
-        "PLUGIN"
-    ],
-    "main": "index.html",
-    "contributes": {
-        "commands": [
-            {
-                "id": "generate-project-report",
-                "label": "生成项目时间报告",
-                "description": "根据项目数据生成详细的时间报告"
-            }
-        ],
-        "menus": {
-            "plugin": [
-                {
-                    "command": "generate-project-report",
-                    "group": "navigation"
-                }
-            ]
-        }
+    "main": {
+        "url": "index.html",
+        "width": 750,
+        "height": 700
     }
 }

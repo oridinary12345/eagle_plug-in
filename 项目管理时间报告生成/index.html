@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>项目管理时间报告生成</title>
     <style>
         * {
@@ -162,6 +163,100 @@
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background-color: white;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input[type="text"]:hover {
+            border-color: #667eea;
+        }
+
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input[type="text"]::placeholder {
+            color: #999;
+        }
+
+        .date-shortcut {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 6px 16px;
+            font-size: 13px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: none;
+        }
+
+        .date-shortcut:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .date-shortcut:active {
+            transform: translateY(0);
+        }
+
+        .progress-container {
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .preview-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #1565c0;
+            display: none;
+        }
+
+        .preview-info strong {
+            font-weight: 600;
+        }
     </style>
     <script type="text/javascript" src="js/plugin.js"></script>
 </head>
@@ -184,7 +279,45 @@
         </div>
 
         <div class="form-group">
+            <label for="projectFilter">项目筛选（可选）：</label>
+            <input type="text" id="projectFilter" placeholder="输入项目名称关键词，例如：客户管理">
+        </div>
+
+        <div class="form-group">
+            <label for="keywordFilter">关键词搜索（可选）：</label>
+            <input type="text" id="keywordFilter" placeholder="搜索需求名称、标签或注释">
+        </div>
+
+        <div class="form-group">
+            <label>文件类型筛选：</label>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 8px;">
+                <label style="font-weight: normal; display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="filterImage" checked style="margin-right: 5px;">
+                    <span>🖼️ 图片</span>
+                </label>
+                <label style="font-weight: normal; display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="filterVideo" checked style="margin-right: 5px;">
+                    <span>🎬 视频</span>
+                </label>
+                <label style="font-weight: normal; display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="filterDocument" checked style="margin-right: 5px;">
+                    <span>📄 文档</span>
+                </label>
+                <label style="font-weight: normal; display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="filterOther" checked style="margin-right: 5px;">
+                    <span>📦 其他</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
             <label>时间范围筛选：</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                <button type="button" class="date-shortcut" onclick="setThisMonth()">📅 本月</button>
+                <button type="button" class="date-shortcut" onclick="setLastMonth()">📅 上月</button>
+                <button type="button" class="date-shortcut" onclick="setThisQuarter()">📅 本季度</button>
+                <button type="button" class="date-shortcut" onclick="setThisYear()">📅 本年度</button>
+            </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <div style="flex: 1;">
                     <label for="startYear" style="font-size: 12px; font-weight: normal; color: #666;">开始年份</label>
@@ -236,6 +369,17 @@
                     启用时间范围筛选
                 </label>
             </div>
+        </div>
+        
+        <div id="previewInfo" class="preview-info">
+            <strong>📊 数据预览：</strong><span id="previewText">等待筛选...</span>
+        </div>
+
+        <div id="progressContainer" class="progress-container">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <span id="progressText" class="progress-text">0%</span>
         </div>
         
         <div class="button-container">
