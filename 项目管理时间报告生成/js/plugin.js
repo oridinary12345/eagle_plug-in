@@ -108,7 +108,188 @@ function isInDateRange(yearMonth, start, end) {
 	return value >= parseInt(start) && value <= parseInt(end);
 }
 
-// ===== CSV生成 =====
+// ===== Excel生成（带缩略图）=====
+async function generateExcel(data, filename) {
+	try {
+		addStatusMessage('正在创建Excel工作簿...', 'info');
+		
+		const workbook = new ExcelJS.Workbook();
+		const worksheet = workbook.addWorksheet('项目报告');
+		
+		// 定义列
+		worksheet.columns = [
+			{ header: '缩略图', key: 'thumbnail', width: 15 },
+			{ header: '人员', key: 'person', width: 12 },
+			{ header: '项目名称', key: 'projectName', width: 25 },
+			{ header: '需求名称', key: 'requirementName', width: 30 },
+			{ header: '完成时间', key: 'completionDate', width: 15 },
+			{ header: '月份分类', key: 'monthCategory', width: 15 },
+			{ header: '标签', key: 'tags', width: 30 },
+			{ header: '注释', key: 'annotation', width: 30 }
+		];
+		
+		// 设置表头样式
+		worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+		worksheet.getRow(1).fill = {
+			type: 'pattern',
+			pattern: 'solid',
+			fgColor: { argb: 'FF667EEA' }
+		};
+		worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+		worksheet.getRow(1).height = 25;
+		
+		addStatusMessage(`准备插入 ${data.length} 条记录...`, 'info');
+		
+		// 添加数据行
+		for (let i = 0; i < data.length; i++) {
+			const item = data[i];
+			const rowIndex = i + 2; // 从第2行开始（第1行是表头）
+			
+			// 每10条记录更新一次进度
+			if (i % 10 === 0) {
+				const progress = 85 + Math.floor((i / data.length) * 10);
+				updateProgress(progress, `生成Excel: ${i + 1}/${data.length}`);
+			}
+			
+			// 添加数据行
+			const row = worksheet.addRow({
+				thumbnail: '', // 缩略图单元格留空，后面用图片填充
+				person: item.人员,
+				projectName: item.项目名称,
+				requirementName: item.需求名称,
+				completionDate: item.完成时间,
+				monthCategory: item.月份分类,
+				tags: item.标签,
+				annotation: item.注释
+			});
+			
+			// 设置行高
+			row.height = 80;
+			row.alignment = { vertical: 'middle', wrapText: true };
+			
+			// 插入缩略图
+			if (item.item) {
+				try {
+					const imageBuffer = await loadImageAsBuffer(item.item);
+					if (imageBuffer) {
+						const imageId = workbook.addImage({
+							buffer: imageBuffer,
+							extension: 'png' // Eagle缩略图都是PNG格式
+						});
+						
+						// 将图片添加到单元格
+						worksheet.addImage(imageId, {
+							tl: { col: 0, row: rowIndex - 1 }, // top-left
+							ext: { width: 80, height: 80 },
+							editAs: 'oneCell'
+						});
+					}
+				} catch (imgError) {
+					console.warn(`图片加载失败 (${item.需求名称}):`, imgError);
+					// 图片加载失败时，在单元格中显示文字说明
+					worksheet.getCell(rowIndex, 1).value = '无缩略图';
+				}
+			}
+		}
+		
+		// 设置边框
+		worksheet.eachRow((row, rowNumber) => {
+			row.eachCell((cell) => {
+				cell.border = {
+					top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+					left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+					bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+					right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+				};
+			});
+		});
+		
+		updateProgress(95, '保存Excel文件...');
+		addStatusMessage('正在保存Excel文件...', 'info');
+		
+		// 生成文件
+		const buffer = await workbook.xlsx.writeBuffer();
+		downloadBlob(buffer, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		
+		return true;
+	} catch (error) {
+		console.error('生成Excel失败:', error);
+		throw new Error(`Excel生成失败: ${error.message}`);
+	}
+}
+
+// ===== 图片处理函数 =====
+async function loadImageAsBuffer(item) {
+	try {
+		// 从filePath提取库路径
+		if (!item.filePath) {
+			console.warn('素材没有filePath:', item.name);
+			return null;
+		}
+		
+		// filePath格式：\\\\192.168.1.220\某某\D_盘\美术部\Eagle 数据库\素材库.library\images\...
+		// 需要提取到 .library 所在的目录
+		let filePath = item.filePath;
+		const libraryMatch = filePath.match(/(.+\.library)/i);
+		
+		if (!libraryMatch) {
+			console.warn('无法从路径中提取库路径:', filePath);
+			return null;
+		}
+		
+		const libraryPath = libraryMatch[1];
+		
+		// Eagle缩略图实际存储路径：库路径\images\{itemId}.info\{原文件名}_thumbnail.png
+		// 例如：素材库.library\images\MJB4Y4QJW8I2S.info\2025.122.18巅峰对决名片换皮x3_thumbnail.png
+		let thumbnailPath = `${libraryPath}\\images\\${item.id}.info\\${item.name}_thumbnail.png`;
+		
+		// 转换为file协议URL（UNC路径需要特殊处理）
+		if (thumbnailPath.startsWith('\\\\')) {
+			// UNC路径：\\\\server\\share\\... 转换为 file://server/share/...
+			// 移除前面的 \\\\ 然后添加 file:// 前缀
+			thumbnailPath = 'file://' + thumbnailPath.substring(2).replace(/\\/g, '/');
+		} else {
+			// 本地路径：C:\\... 转换为 file:///C:/...
+			thumbnailPath = 'file:///' + thumbnailPath.replace(/\\/g, '/');
+		}
+		
+		console.log(`尝试加载缩略图: ${thumbnailPath}`);
+		
+		const response = await fetch(thumbnailPath);
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		const arrayBuffer = await response.arrayBuffer();
+		return new Uint8Array(arrayBuffer);
+	} catch (error) {
+		console.error(`读取图片失败 (${item.name}):`, error);
+		return null;
+	}
+}
+
+function getImageExtension(path) {
+	if (!path) return 'png';
+	const ext = path.split('.').pop().toLowerCase();
+	// ExcelJS支持的图片格式
+	const validExts = ['png', 'jpeg', 'jpg', 'gif'];
+	return validExts.includes(ext) ? (ext === 'jpg' ? 'jpeg' : ext) : 'png';
+}
+
+function downloadBlob(buffer, filename, mimeType) {
+	const blob = new Blob([buffer], { type: mimeType });
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	
+	link.href = url;
+	link.download = filename;
+	link.style.display = 'none';
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
+	URL.revokeObjectURL(url);
+}
+
+// ===== CSV生成（保留作为备用）=====
 function generateCSV(data) {
 	if (!data.length) return '';
 	
@@ -317,8 +498,19 @@ async function generateReport() {
 			stats.projects[projectName].count++;
 			stats.projects[projectName].months.add(month);
 			
-			// 添加数据
+			// 调试：输出前3条记录的素材ID信息
+			if (reportData.length < 3) {
+				console.log(`[调试] 素材 #${reportData.length + 1}:`, {
+					id: item.id,
+					name: item.name,
+					thumbnail: item.thumbnail,
+					filePath: item.filePath
+				});
+			}
+			
+			// 添加数据 - 保存完整的item对象用于加载缩略图
 			reportData.push({
+				item: { id: item.id, name: item.name, filePath: item.filePath }, // 保存关键信息
 				人员: person,
 				项目名称: projectName,
 				需求名称: item.name || '未命名',
@@ -353,18 +545,18 @@ async function generateReport() {
 		});
 		addStatusMessage(statsMsg, 'success');
 		
-		// 生成并下载CSV
-		updateProgress(90, '生成CSV文件...');
-		addStatusMessage('正在生成CSV文件...', 'info');
-		const csv = generateCSV(reportData);
+		// 生成并下载Excel文件（带缩略图）
+		updateProgress(85, '生成Excel文件...');
+		addStatusMessage('正在生成Excel文件...', 'info');
 		
 		const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
 		const personPart = selectedPerson !== 'all' ? `_${selectedPerson}` : '';
 		const datePart = dateRange ? `_${dateRange.start}-${dateRange.end}` : '';
-		const filename = `项目时间报告${personPart}${datePart}_${timestamp}.csv`;
+		const filename = `项目时间报告${personPart}${datePart}_${timestamp}.xlsx`;
+		
+		await generateExcel(reportData, filename);
 		
 		updateProgress(100, '完成！');
-		downloadCSV(csv, filename);
 		addStatusMessage(`✅ 报告生成成功！文件名：${filename}`, 'success');
 		
 		// 保存用户选择
