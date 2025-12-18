@@ -726,6 +726,57 @@ function initYearSelectors() {
 	document.querySelector('#endMonth').value = currentMonth;
 }
 
+async function initPersonSelector() {
+	try {
+		addStatusMessage('正在加载人员列表...', 'info');
+		
+		// 构建文件夹缓存
+		await buildFolderCache();
+		
+		// 获取所有素材
+		const allItems = await eagle.item.getAll();
+		
+		if (!allItems?.length) {
+			addStatusMessage('⚠️ 未找到任何素材', 'error');
+			return;
+		}
+		
+		// 提取所有唯一的人员名称
+		const personSet = new Set();
+		allItems.forEach(item => {
+			const folderPath = item.folders?.[0] ? getFolderPath(item.folders[0]) : '';
+			const person = extractPersonFromPath(folderPath);
+			if (person && person !== '未知') {
+				personSet.add(person);
+			}
+		});
+		
+		// 将人员名称排序
+		const persons = Array.from(personSet).sort();
+		
+		// 填充到下拉列表
+		const personSelect = document.querySelector('#personSelect');
+		// 保留"全部人员"选项
+		const allOption = personSelect.querySelector('option[value="all"]');
+		personSelect.innerHTML = '';
+		personSelect.appendChild(allOption);
+		
+		// 添加人员选项
+		persons.forEach(person => {
+			const option = document.createElement('option');
+			option.value = person;
+			option.textContent = person;
+			personSelect.appendChild(option);
+		});
+		
+		addStatusMessage(`✓ 已加载 ${persons.length} 个人员`, 'success');
+		
+	} catch (error) {
+		console.error('加载人员列表失败:', error);
+		addStatusMessage('⚠️ 加载人员列表失败，请刷新插件重试', 'error');
+	}
+}
+
 function initEventListeners() {
 	// 筛选条件变化时保存
 	const saveOnChangeIds = [
@@ -743,11 +794,17 @@ function initEventListeners() {
 	});
 }
 
-eagle.onPluginCreate((plugin) => {
+eagle.onPluginCreate(async (plugin) => {
 	addStatusMessage(`插件已加载 - ${plugin.manifest.name} v${plugin.manifest.version}`, 'info');
 	initYearSelectors();
-	loadUserPreferences();
 	initEventListeners();
+	
+	// 动态加载人员列表
+	await initPersonSelector();
+	
+	// 加载用户偏好（在人员列表加载后）
+	loadUserPreferences();
+	
 	document.querySelector('#generateBtn').addEventListener('click', generateReport);
 });
 
