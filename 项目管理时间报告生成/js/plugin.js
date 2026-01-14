@@ -85,6 +85,47 @@ function extractMonthFromPath(path) {
 	return parts[parts.length - 1] || '未分类';
 }
 
+// ===== 从添加日期提取信息 =====
+function extractMonthFromAddDate(timestamp) {
+	if (!timestamp) return '未分类';
+	try {
+		const date = new Date(timestamp);
+		const year = date.getFullYear();
+		const month = date.getMonth() + 1;
+		return `${year}年${month}月`;
+	} catch (e) {
+		console.error('日期解析失败:', e);
+		return '未分类';
+	}
+}
+
+function extractYearMonthFromAddDate(timestamp) {
+	if (!timestamp) return null;
+	try {
+		const date = new Date(timestamp);
+		const year = date.getFullYear();
+		const month = (date.getMonth() + 1).toString().padStart(2, '0');
+		return year + month;
+	} catch (e) {
+		console.error('日期解析失败:', e);
+		return null;
+	}
+}
+
+function formatAddDate(timestamp) {
+	if (!timestamp) return '';
+	try {
+		const date = new Date(timestamp);
+		const year = date.getFullYear();
+		const month = (date.getMonth() + 1).toString().padStart(2, '0');
+		const day = date.getDate().toString().padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	} catch (e) {
+		console.error('日期格式化失败:', e);
+		return '';
+	}
+}
+
 function extractDateFromTag(tag) {
 	const match = tag.match(/(\d{1,2})\.(\d{1,2})/);
 	if (match) {
@@ -431,6 +472,15 @@ async function generateReport() {
 		
 		addStatusMessage(`✓ 获取到 ${allItems.length} 个素材`, 'success');
 		
+		// 调试：输出第一个素材的时间字段
+		if (allItems.length > 0) {
+			console.log('第一个素材的时间字段:', {
+				importedAt: allItems[0].importedAt,
+				timestamp: new Date(allItems[0].importedAt),
+				formatted: formatAddDate(allItems[0].importedAt)
+			});
+		}
+		
 		// 处理数据
 		updateProgress(50, '处理数据中...');
 		addStatusMessage('正在处理数据...', 'info');
@@ -447,17 +497,19 @@ async function generateReport() {
 				updateProgress(progress, `处理中 ${processedCount}/${allItems.length}`);
 			}
 			
-			// 获取文件夹路径
+			// 获取文件夹路径（用于提取人员信息）
 			const folderPath = item.folders?.[0] ? getFolderPath(item.folders[0]) : '';
 			const person = extractPersonFromPath(folderPath);
-			const month = extractMonthFromPath(folderPath);
+			
+			// 从添加日期提取月份信息
+			const month = extractMonthFromAddDate(item.importedAt);
 			
 			// 人员筛选
 			if (selectedPerson !== 'all' && person !== selectedPerson) continue;
 			
-			// 时间范围筛选
+			// 时间范围筛选（使用添加日期）
 			if (dateRange) {
-				const yearMonth = extractYearMonth(folderPath);
+				const yearMonth = extractYearMonthFromAddDate(item.importedAt);
 				if (!isInDateRange(yearMonth, dateRange.start, dateRange.end)) continue;
 			}
 			
@@ -468,13 +520,14 @@ async function generateReport() {
 			
 			// 提取项目信息
 			let projectName = '未分类项目';
-			let completionDate = '';
 			
 			if (item.tags?.[0]) {
 				const parts = item.tags[0].split('·');
 				projectName = parts.length > 1 ? parts[1] : parts[0];
-				completionDate = extractDateFromTag(item.tags[0]);
 			}
+			
+			// 使用添加日期作为完成时间
+			const completionDate = formatAddDate(item.importedAt);
 			
 			// 项目名称筛选
 			if (projectFilter && !projectName.toLowerCase().includes(projectFilter)) continue;
